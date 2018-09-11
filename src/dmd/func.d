@@ -2725,8 +2725,17 @@ FuncDeclaration resolveFuncCall(const ref Loc loc, Scope* sc, Dsymbol s,
         {
             assert(fd);
 
+            uint errors;
+            bool isCpCtor = fd.isCopyCtorDeclaration() !is null;
+            if (isCpCtor)
+                errors = global.startGagging();
+
             if (fd.checkDisabled(loc, sc))
+            {
+                if (isCpCtor)
+                    global.endGagging(errors);
                 return null;
+            }
 
             bool hasOverloads = fd.overnext !is null;
             auto tf = fd.type.toTypeFunction();
@@ -2776,6 +2785,39 @@ FuncDeclaration resolveFuncCall(const ref Loc loc, Scope* sc, Dsymbol s,
 
             if (hasOverloads)
                 printCandidates(loc, fd);
+            // Display candidate functions
+            int numToDisplay = numOverloadsDisplay;
+            overloadApply(hasOverloads ? fd : null, (Dsymbol s)
+            {
+                auto fd = s.isFuncDeclaration();
+                auto td = s.isTemplateDeclaration();
+                if (fd)
+                {
+                    if (fd.errors || fd.type.ty == Terror)
+                        return 0;
+
+                    auto tf = cast(TypeFunction)fd.type;
+                    .errorSupplemental(fd.loc, "`%s%s`", fd.toPrettyChars(),
+                        parametersTypeToChars(tf.parameters, tf.varargs));
+                }
+                else
+                {
+                    .errorSupplemental(td.loc, "`%s`", td.toPrettyChars());
+                }
+
+                if (global.params.verbose || --numToDisplay != 0 || !fd)
+                    return 0;
+
+                // Too many overloads to sensibly display.
+                int num = 0;
+                overloadApply(fd.overnext, (s){ ++num; return 0; });
+                if (num > 0)
+                    .errorSupplemental(loc, "... (%d more, -v to show) ...", num);
+                return 1;   // stop iterating
+            }, sc);
+            if (isCpCtor)
+                global.endGagging(errors);
+>>>>>>> Implement copy consutructor call for arameter passing and function returning
         }
     }
     else if (m.nextf)

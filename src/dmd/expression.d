@@ -418,13 +418,13 @@ Expression valueNoDtor(Expression e)
  * Input:
  *      sc      just used to specify the scope of created temporary variable
  */
-private Expression callCpCtor(Scope* sc, Expression e)
+private Expression callCpCtor(Scope* sc, Expression e, Type destinationType)
 {
     Type tv = e.type.baseElemOf();
     if (tv.ty == Tstruct)
     {
         StructDeclaration sd = (cast(TypeStruct)tv).sym;
-        if (sd.postblit)
+        if (sd.postblit || sd.copyCtor)
         {
             /* Create a variable tmp, and replace the argument e with:
              *      (tmp = e),tmp
@@ -433,6 +433,8 @@ private Expression callCpCtor(Scope* sc, Expression e)
              * directly onto the stack.
              */
             auto tmp = copyToTemp(STC.rvalue, "__copytmp", e);
+            if (sd.copyCtor && destinationType)
+                tmp.type = destinationType;
             tmp.storage_class |= STC.nodtor;
             tmp.dsymbolSemantic(sc);
             Expression de = new DeclarationExp(e.loc, tmp);
@@ -448,7 +450,7 @@ private Expression callCpCtor(Scope* sc, Expression e)
 /************************************************
  * Handle the postblit call on lvalue, or the move of rvalue.
  */
-Expression doCopyOrMove(Scope *sc, Expression e)
+extern (D) Expression doCopyOrMove(Scope *sc, Expression e, Type t = null)
 {
     if (e.op == TOK.question)
     {
@@ -458,7 +460,7 @@ Expression doCopyOrMove(Scope *sc, Expression e)
     }
     else
     {
-        e = e.isLvalue() ? callCpCtor(sc, e) : valueNoDtor(e);
+        e = e.isLvalue() ? callCpCtor(sc, e, t) : valueNoDtor(e);
     }
     return e;
 }
