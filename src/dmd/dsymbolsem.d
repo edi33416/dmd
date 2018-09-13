@@ -360,12 +360,16 @@ private FuncDeclaration buildPostBlit(StructDeclaration sd, Scope* sc)
     return xpostblit;
 }
 
+// Concatenates 2 MODs(ubyte) into one ModBits(ushort)
 private ModBits createModKey(MOD mod1, MOD mod2)
 {
     return ((mod1 << 8) | mod2);
 }
 
-private CopyCtorDeclaration generateCopyCtorDeclaration(StructDeclaration sd, StorageClass paramStc, StorageClass funcStc)
+/* Generates a copy constructor declaration with the specified storage
+   class for the parameter and the function : @implicit this(ref paramSTC S p) funcStc;
+*/
+private CopyCtorDeclaration generateCopyCtorDeclaration(StructDeclaration sd, const StorageClass paramStc, const StorageClass funcStc)
 {
     auto fparams = new Parameters();
     auto structType = sd.type;
@@ -378,6 +382,13 @@ private CopyCtorDeclaration generateCopyCtorDeclaration(StructDeclaration sd, St
     return ccd;
 }
 
+/* Generates a trivial copy constructor body that simply does memberwise
+ * initialization:
+ *
+ *    this.field1 = rhs.field1;
+ *    this.field2 = rhs.field2;
+ *    ...
+ */
 private Statement generateCopyCtorBody(StructDeclaration sd)
 {
     Loc loc;
@@ -441,8 +452,8 @@ private CopyCtorDeclaration buildCopyCtor(StructDeclaration sd, Scope* sc)
         auto copyCtorBody = generateCopyCtorBody(sd);
         foreach (key; copyCtorTable.keys)
         {
-            MOD paramMod = cast(MOD)(key >> 8);
-            MOD funcMod = cast(MOD)key;
+            const MOD paramMod = cast(MOD)(key >> 8);
+            const MOD funcMod = cast(MOD)key;
             auto ccd = generateCopyCtorDeclaration(sd, ModToStc(paramMod), ModToStc(funcMod));
             //printf("generating for %s\n", ccd.type.toChars());
             ccd.fbody = copyCtorBody.syntaxCopy();
@@ -3806,7 +3817,7 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         StructDeclaration sd = p.isStructDeclaration();
         if (!sd)
         {
-            error(cctd.loc, "copy constructor can only be a member of aggregate, not %s `%s`", p.kind(), p.toChars());
+            error(cctd.loc, "copy constructor can only be a member of `struct`, not %s `%s`", p.kind(), p.toChars());
             cctd.type = Type.terror;
             cctd.errors = true;
             return;
@@ -3835,7 +3846,7 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         Type unqualParamType = param.type.mutableOf().unSharedOf();
         Type unqualStructType = sd.type.mutableOf().unSharedOf();
         if (unqualParamType != unqualStructType)
-            error(cctd.loc, "the copy constructor parameter basic type needs to be `%s`, not `%s`", unqualStructType.toChars(), unqualParamType.toChars());
+            error(cctd.loc, "the copy constructor parameter base type needs to be `%s`, not `%s`", unqualStructType.toChars(), unqualParamType.toChars());
     }
 
     override void visit(CtorDeclaration ctd)

@@ -215,7 +215,7 @@ enum StructPOD : int
     fwd,   // POD not yet computed
 }
 
-alias ushort ModBits;
+alias ModBits = ushort;
 
 /***********************************************************
  * All `struct` declarations are an instance of this.
