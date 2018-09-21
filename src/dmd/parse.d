@@ -309,8 +309,7 @@ final class Parser(AST) : Lexer
                         const stc = parseAttribute(&exps);
                         if (stc == AST.STC.property || stc == AST.STC.nogc
                           || stc == AST.STC.disable || stc == AST.STC.safe
-                          || stc == AST.STC.trusted || stc == AST.STC.system
-                          || stc == AST.STC.implicit)
+                          || stc == AST.STC.trusted || stc == AST.STC.system)
                         {
                             error("`@%s` attribute for module declaration is not supported", token.toChars());
                         }
@@ -1330,8 +1329,6 @@ final class Parser(AST) : Lexer
                 stc = AST.STC.trusted;
             else if (token.ident == Id.system)
                 stc = AST.STC.system;
-            else if (token.ident == Id.implicit)
-                stc = AST.STC.implicit;
             else if (token.ident == Id.disable)
                 stc = AST.STC.disable;
             else if (token.ident == Id.future)
@@ -2436,31 +2433,17 @@ final class Parser(AST) : Lexer
         int varargs;
         AST.Parameters* parameters = parseParameters(&varargs);
         stc = parsePostfix(stc, &udas);
-        size_t paramDim = AST.Parameter.dim(parameters);
-        if (varargs != 0 || paramDim != 0)
+        if (varargs != 0 || AST.Parameter.dim(parameters) != 0)
         {
             if (stc & AST.STC.static_)
-                error(loc, "constructors and copy constructors cannot be static");
+                error(loc, "constructors cannot be static");
         }
         else if (StorageClass ss = stc & (AST.STC.shared_ | AST.STC.static_)) // this()
         {
-            if (stc & AST.STC.implicit)
-            {}
-            else if (ss == AST.STC.static_)
+            if (ss == AST.STC.static_)
                 error(loc, "use `static this()` to declare a static constructor");
             else if (ss == (AST.STC.shared_ | AST.STC.static_))
                 error(loc, "use `shared static this()` to declare a shared static constructor");
-        }
-
-        // copy constructor
-        if (stc & AST.STC.implicit)
-        {
-            if (tpl)
-                error(loc, "the copy constructor cannot be templated");
-            if (paramDim != 1 || varargs)
-                error(loc, "the copy constructor receives exactly one argument");
-            else if (!(AST.Parameter.getNth(parameters, 0).storageClass & AST.STC.ref_))
-                error(loc, "the parameter to the copy constructor must by passed by reference. Add `ref` to the parameter type");
         }
 
         AST.Expression constraint = tpl ? parseConstraint() : null;
@@ -2468,11 +2451,7 @@ final class Parser(AST) : Lexer
         AST.Type tf = new AST.TypeFunction(parameters, null, varargs, linkage, stc); // RetrunType -> auto
         tf = tf.addSTC(stc);
 
-        AST.FuncDeclaration f;
-        if (stc & AST.STC.implicit)
-            f = new AST.CopyCtorDeclaration(loc, Loc.initial, stc, tf);
-        else
-            f = new AST.CtorDeclaration(loc, Loc.initial, stc, tf);
+        auto f = new AST.CtorDeclaration(loc, Loc.initial, stc, tf);
         AST.Dsymbol s = parseContracts(f);
         if (udas)
         {
@@ -2865,8 +2844,7 @@ final class Parser(AST) : Lexer
                         StorageClass stc2 = parseAttribute(&exps);
                         if (stc2 == AST.STC.property || stc2 == AST.STC.nogc ||
                             stc2 == AST.STC.disable || stc2 == AST.STC.safe ||
-                            stc2 == AST.STC.trusted || stc2 == AST.STC.system ||
-                            stc2 == AST.STC.implicit)
+                            stc2 == AST.STC.trusted || stc2 == AST.STC.system)
                         {
                             error("`@%s` attribute for function parameter is not supported", token.toChars());
                         }
@@ -3010,8 +2988,7 @@ final class Parser(AST) : Lexer
                             StorageClass stc2 = parseAttribute(&exps);
                             if (stc2 == AST.STC.property || stc2 == AST.STC.nogc ||
                                 stc2 == AST.STC.disable || stc2 == AST.STC.safe ||
-                                stc2 == AST.STC.trusted || stc2 == AST.STC.system ||
-                                stc2 == AST.STC.implicit)
+                                stc2 == AST.STC.trusted || stc2 == AST.STC.system)
                             {
                                 error("`@%s` attribute for function parameter is not supported", token.toChars());
                             }

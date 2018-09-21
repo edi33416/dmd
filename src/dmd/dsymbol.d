@@ -1093,7 +1093,7 @@ extern (C++) class Dsymbol : RootObject
         return null;
     }
 
-    inout(CopyCtorDeclaration) isCopyCtorDeclaration() inout
+    inout(CtorDeclaration) isCopyCtorDeclaration() inout
     {
         return null;
     }
