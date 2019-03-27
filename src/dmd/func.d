@@ -1652,7 +1652,8 @@ extern (C++) class FuncDeclaration : Declaration
             printf("isMember:%p isStatic:%d private:%d ctor:%d !Dlinkage:%d\n", isMember(), isStatic(), protection == Prot.Kind.private_, isCtorDeclaration(), linkage != LINK.d);
             printf("result is %d\n", isMember() && !(isStatic() || protection == Prot.Kind.private_ || protection == Prot.Kind.package_) && p.isClassDeclaration() && !(p.isInterfaceDeclaration() && isFinalFunc()));
         }
-        return !(isStatic() || protection.kind == Prot.Kind.private_ || protection.kind == Prot.Kind.package_) && !(p.isInterfaceDeclaration() && isFinalFunc());
+        //return !(isStatic() || protection.kind == Prot.Kind.private_ || protection.kind == Prot.Kind.package_) && !(p.isInterfaceDeclaration() && isFinalFunc());
+        return !(isStatic() || protection.kind == Prot.Kind.private_ || protection.kind == Prot.Kind.package_);
     }
 
     final bool isFinalFunc() const

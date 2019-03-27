@@ -3156,6 +3156,8 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
 
         if (funcdecl.isOverride() && !funcdecl.isVirtual())
         {
+            //auto tfoo = cast(TypeFunction)funcdecl.originalType;
+            //printf("funcdecl is %s, tf=%s, tfo=%s\n", funcdecl.toPrettyChars(), f.toChars(), tfoo.toChars());
             Prot.Kind kind = funcdecl.prot().kind;
             if ((kind == Prot.Kind.private_ || kind == Prot.Kind.package_) && funcdecl.isMember())
                 funcdecl.error("`%s` method is not virtual and cannot override", protectionToChars(kind));
@@ -3189,7 +3191,7 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
             funcdecl.storage_class |= STC.abstract_;
             if (funcdecl.isCtorDeclaration() || funcdecl.isPostBlitDeclaration() || funcdecl.isDtorDeclaration() || funcdecl.isInvariantDeclaration() || funcdecl.isNewDeclaration() || funcdecl.isDelete())
                 funcdecl.error("constructors, destructors, postblits, invariants, new and delete functions are not allowed in interface `%s`", id.toChars());
-            if (funcdecl.fbody && funcdecl.isVirtual())
+            if (funcdecl.fbody && funcdecl.isVirtual() && !funcdecl.isFinalFunc())
                 funcdecl.error("function body only allowed in `final` functions in interface `%s`", id.toChars());
         }
         if (UnionDeclaration ud = parent.isUnionDeclaration())
